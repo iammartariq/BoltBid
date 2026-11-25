@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ⚡ BoltBid — Flash Auction Engine (Internet Computing CEP)
 
 A high-performance **Progressive Web App (PWA)** and real-time flash-auction bidding engine engineered to handle **50,000 concurrent bidders** competing for limited-stock items in the critical final 10 seconds of an auction.
@@ -108,3 +109,6 @@ npm run load-test:50k
 ## 📜 Documentation
 
 For mathematical proofs, concurrency race-condition analyses, OS tuning, and horizontal scaling blueprints, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+=======
+# BoltBid
+>>>>>>> 2ebbd4256a90151a7d39ca556e86c91135ad8d50
