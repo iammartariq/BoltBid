@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="Admin Analytics & Operations Dashboard for BoltBid">
+  <title>📊 BoltBid — Admin Analytics</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-title">
+        <span class="bolt">⚡</span>
+        <h1>BoltBid</h1>
+      </div>
+      <nav class="nav-tabs" aria-label="Dashboard Navigation">
+        <a href="/" class="nav-tab">⚡ Bidder Arena</a>
+        <a href="/admin" class="nav-tab active">📊 Admin Dashboard</a>
+      </nav>
+    </div>
+
+    <div class="header-stats">
+      <button class="btn-install" id="install-pwa-btn" hidden>Install App</button>
+      <span class="db-badge" id="db-mode-badge">DB: Connecting...</span>
+      <div class="stat">
+        <span class="status-dot connecting" id="admin-ws-dot"></span>
+        <span id="admin-ws-text">Connecting...</span>
+      </div>
+      <div class="stat">
+        ⏱️ Up: <span class="stat-value" id="uptime-val">0s</span>
+      </div>
+      <div class="user-pill admin-pill" id="admin-user-pill" hidden>
+        <span>🛡️</span>
+        <span id="admin-username-badge">admin</span>
+      </div>
+      <button type="button" class="btn-logout" id="admin-logout-btn">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+
+    <!-- Optional Admin Key Bar (only needed if ADMIN_KEY is set on server) -->
+    <div class="admin-auth-bar" id="admin-auth-bar" hidden>
+      <span>🔐 Server requires an Admin Key for control mutations:</span>
+      <input type="password" id="admin-key-input" placeholder="Enter ADMIN_KEY">
+      <button class="btn btn-secondary" id="save-admin-key">Apply Key</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Active Connections</div>
+        <div class="kpi-value" id="kpi-connections">0</div>
+        <div class="kpi-sub">Peak: <strong id="kpi-peak-conn">0</strong> • Target: 50,000</div>
+        <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-conn-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Live Bid Throughput</div>
+        <div class="kpi-value" id="kpi-bps">0 <span class="unit">bids/s</span></div>
+        <div class="kpi-sub">Total Processed: <strong id="kpi-total-bids">0</strong></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Acceptance Rate</div>
+        <div class="kpi-value text-success" id="kpi-accept-rate">100%</div>
+        <div class="kpi-sub">
+          ✅ <strong id="kpi-accepted">0</strong> •
+          ❌ <strong id="kpi-rejected">0</strong> •
+          🛡️ <strong id="kpi-ratelim">0</strong>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Engine Latency (p95)</div>
+        <div class="kpi-value" id="kpi-p95">0.00 <span class="unit">ms</span></div>
+        <div class="kpi-sub">p50: <strong id="kpi-p50">0</strong>ms • Loop Lag: <strong id="kpi-lag">0</strong>ms</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Gross Merchandise Value</div>
+        <div class="kpi-value text-success" id="kpi-gmv">$0.00</div>
+        <div class="kpi-sub">Across <strong id="kpi-auction-count">0</strong> auctions</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Runtime &amp; Anti-Snipe</div>
+        <div class="kpi-value" id="kpi-heap">0 <span class="unit">MB</span></div>
+        <div class="kpi-sub">
+          🛡️ Extensions: <strong id="kpi-snipes">0</strong> •
+          Dropped: <strong id="kpi-dropped">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Analytics Charts -->
+    <section class="charts-grid">
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <div>
+            <h3>📈 Bid Velocity &amp; Outcomes (60s Rolling)</h3>
+            <p class="panel-sub">Real-time accepted, rejected, and rate-limited bids per second</p>
+          </div>
+          <div class="legend">
+            <span class="leg"><i class="dot dot-green"></i>Accepted/s</span>
+            <span class="leg"><i class="dot dot-red"></i>Rejected/s</span>
+            <span class="leg"><i class="dot dot-amber"></i>Rate-Limited/s</span>
+          </div>
+        </div>
+        <canvas id="chart-throughput" height="220"></canvas>
+      </div>
+
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <div>
+            <h3>⚡ Queue Processing Latency &amp; Load</h3>
+            <p class="panel-sub">Engine execution p95/avg latency (ms) and concurrent connections</p>
+          </div>
+          <div class="legend">
+            <span class="leg"><i class="dot dot-blue"></i>p95 Latency (ms)</span>
+            <span class="leg"><i class="dot dot-cyan"></i>Connections</span>
+          </div>
+        </div>
+        <canvas id="chart-latency" height="220"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>🛡️ Bid Outcome &amp; Rejection Breakdown</h3>
+            <p class="panel-sub">Distribution of accepted bids vs concurrency/rule rejections</p>
+          </div>
+        </div>
+        <div id="rejection-bars" class="breakdown-list">
+          <div class="empty-note">Waiting for bid traffic...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Operations: Simulator + Create Auction -->
+    <section class="ops-grid">
+      <!-- Flash Spike Simulator -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>🚀 Final-10-Second Flash Spike Simulator</h3>
+            <p class="panel-sub">Simulate concurrent virtual bidders hitting the atomic FIFO queues &amp; rate limiter</p>
+          </div>
+          <span class="sim-status-pill" id="sim-status-pill">Idle</span>
+        </div>
+
+        <div class="ops-form-grid">
+          <div class="form-group">
+            <label for="sim-auction">Target Auction</label>
+            <select id="sim-auction"></select>
+          </div>
+          <div class="form-group">
+            <label for="sim-bidders">Virtual Bidders</label>
+            <select id="sim-bidders">
+              <option value="50">50 bidders</option>
+              <option value="250" selected>250 bidders</option>
+              <option value="1000">1,000 bidders</option>
+              <option value="2500">2,500 bidders</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sim-duration">Burst Duration</label>
+            <select id="sim-duration">
+              <option value="8">8 seconds</option>
+              <option value="15" selected>15 seconds</option>
+              <option value="30">30 seconds</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="sim-jump-10s" checked>
+          <span>Jump auction into Final 10 Seconds (triggers urgent countdown &amp; anti-snipe protection)</span>
+        </label>
+
+        <div class="ops-actions">
+          <button class="btn btn-primary" id="start-sim-btn">⚡ Launch Traffic Spike</button>
+          <button class="btn btn-danger" id="stop-sim-btn" disabled>Stop Simulator</button>
+        </div>
+      </div>
+
+      <!-- Create New Flash Auction -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>➕ Launch New Flash Auction</h3>
+            <p class="panel-sub">Create a live auction room and push it immediately to connected bidders</p>
+          </div>
+        </div>
+
+        <form id="create-auction-form">
+          <div class="ops-form-grid two-col">
+            <div class="form-group">
+              <label for="new-auction-title">Auction Title</label>
+              <input type="text" id="new-auction-title" placeholder="e.g., Midnight GPU Flash Drop" required maxlength="80">
+            </div>
+            <div class="form-group">
+              <label for="new-auction-duration">Duration (seconds)</label>
+              <input type="number" id="new-auction-duration" value="120" min="15" max="3600" required>
+            </div>
+          </div>
+
+          <div class="items-builder-header">
+            <span>Auction Items</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="add-item-row">+ Add Item</button>
+          </div>
+          <div id="new-items-list" class="new-items-list"></div>
+
+          <button type="submit" class="btn btn-primary">Create &amp; Broadcast Auction ⚡</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Auctions Management Table -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>🔨 Live &amp; Completed Auctions</h3>
+          <p class="panel-sub">Monitor queue depth, bidders, GMV, and trigger live controls</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Auction</th>
+              <th>Status</th>
+              <th>Time Left</th>
+              <th>Bidders</th>
+              <th>Total Bids</th>
+              <th>Queue Depth</th>
+              <th>GMV</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody id="auctions-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Item Analytics + Top Bidders -->
+    <section class="two-col-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>📦 Item-Level Performance</h3>
+            <p class="panel-sub">Price uplift, stock utilization, and current leading bidders</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Stock</th>
+                <th>Start → Current</th>
+                <th>Uplift</th>
+                <th>Bids</th>
+                <th>Leader</th>
+              </tr>
+            </thead>
+            <tbody id="items-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>🏆 Top Active Bidders</h3>
+            <p class="panel-sub">Ranked by accepted winning bids &amp; total bid volume</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Bidder</th>
+                <th>Accepted</th>
+                <th>Max Bid</th>
+                <th>Volume</th>
+              </tr>
+            </thead>
+            <tbody id="bidders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Persisted Audit Stream & Winners History -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h3>🗄️ Audit Stream &amp; Database History</h3>
+          <p class="panel-sub" id="db-detail-sub">Live accepted bids &amp; persisted auction winners</p>
+        </div>
+        <div class="tab-pills">
+          <button type="button" class="tab-pill active" data-history-tab="bids">Live Bid Stream</button>
+          <button type="button" class="tab-pill" data-history-tab="winners">Persisted Winners</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="refresh-history-btn">Refresh DB</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="history-bids-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Bidder</th>
+              <th>Item</th>
+              <th>Amount</th>
+              <th>Engine Latency</th>
+            </tr>
+          </thead>
+          <tbody id="recent-bids-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap" id="history-winners-wrap" hidden>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ended At</th>
+              <th>Auction</th>
+              <th>Item</th>
+              <th>Winner</th>
+              <th>Winning Bid</th>
+              <th>Total Bids</th>
+            </tr>
+          </thead>
+          <tbody id="winners-history-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast-container"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

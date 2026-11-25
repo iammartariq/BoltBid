@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="Admin Portal Login for BoltBid">
+  <title>🛡️ Admin Login — BoltBid</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="auth-page admin-theme">
+
+  <header class="header">
+    <div class="header-left">
+      <div class="header-title">
+        <span class="bolt">⚡</span>
+        <h1>BoltBid</h1>
+      </div>
+    </div>
+    <div class="header-stats">
+      <a href="/login" class="nav-tab">⚡ Bidder Login</a>
+    </div>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-card" aria-label="Admin Portal Login">
+      <div class="auth-brand">
+        <div class="auth-emblem">🛡️</div>
+        <h2>Admin Operations Portal</h2>
+        <p>Sign in with your administrator credentials to access telemetry &amp; controls</p>
+      </div>
+
+      <div class="auth-alert" id="admin-alert" hidden></div>
+
+      <form id="admin-login-form" class="auth-form" novalidate>
+        <div class="form-group">
+          <label for="admin-username">Admin Username</label>
+          <input type="text" id="admin-username" autocomplete="username" placeholder="Enter admin username" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-password">Admin Password</label>
+          <div class="password-field">
+            <input type="password" id="admin-password" autocomplete="current-password" placeholder="Enter admin password" required>
+            <button type="button" class="toggle-pass-btn" id="toggle-admin-pass">Show</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-admin-submit" id="admin-submit-btn">
+          Access Admin Dashboard →
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <a href="/login">← Back to Bidder Login</a>
+        <a href="/">Bidder Arena</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="/admin-login.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0e1a">
+  <meta name="description" content="BoltBid — Real-time WebSocket Flash Auction Platform with atomic bidding and live analytics">
+  <title>⚡ BoltBid — Bidder Arena</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Header & Dashboard Switcher                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-title">
+        <span class="bolt">⚡</span>
+        <h1>BoltBid</h1>
+      </div>
+      <nav class="nav-tabs" aria-label="Dashboard Navigation">
+        <a href="/" class="nav-tab active">⚡ Bidder Arena</a>
+        <a href="/admin" class="nav-tab">📊 Admin Dashboard</a>
+      </nav>
+    </div>
+
+    <div class="header-stats">
+      <span class="offline-pill" id="offline-pill" hidden>Offline Mode</span>
+      <button class="btn-install" id="install-pwa-btn" hidden>Install App</button>
+      <div class="stat" title="WebSocket round-trip latency">
+        ⚡ <span class="stat-value" id="latency-rtt">--</span> ms
+      </div>
+      <div class="stat">
+        <span class="status-dot connecting"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+      <div class="stat">
+        👥 <span class="stat-value" id="bidder-count">0</span> bidders
+      </div>
+      <div class="user-pill" id="user-pill" hidden>
+        <span class="user-avatar" id="user-avatar">?</span>
+        <span id="user-display-name">Bidder</span>
+      </div>
+      <button type="button" class="btn-logout" id="logout-btn" hidden>Sign Out</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Join Screen                                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="join-screen">
+    <div class="join-card">
+      <h2>⚡ Join BoltBid Auction</h2>
+      <p>Enter your name to compete on limited-stock items in real time over persistent WebSockets.</p>
+
+      <div class="form-group">
+        <label for="bidder-name">Your Name</label>
+        <input type="text" id="bidder-name" placeholder="Enter your bidder name" maxlength="30" autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="auction-select">Select Auction</label>
+        <select id="auction-select">
+          <option value="">Loading auctions...</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" id="join-btn">Enter Auction ⚡</button>
+
+      <div class="join-footer-note">
+        <p>
+          <strong>Atomic FIFO Queue Engine:</strong> Bids are serialized per item with zero stale reads,
+          anti-sniping timer extensions, and real-time multi-unit stock allocation.
+        </p>
+        <a href="/admin" class="admin-cta-link">Open Admin Analytics &amp; Spike Simulator →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Auction View                                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="auction-container">
+
+    <div class="auction-top-bar">
+      <div>
+        <h2 id="auction-title" class="auction-heading"></h2>
+        <span class="auction-submeta" id="auction-submeta">Live WebSocket Room</span>
+      </div>
+      <div class="auction-actions">
+        <button class="btn btn-secondary" id="leave-auction-btn">← Switch Auction</button>
+      </div>
+    </div>
+
+    <!-- Anti-Snipe Banner -->
+    <div class="snipe-banner" id="snipe-banner" hidden>
+      🛡️ <strong>Anti-Sniping Activated!</strong> Final-second bid detected — auction timer extended!
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown-bar">
+      <div class="progress" style="width: 100%"></div>
+      <div class="timer-content">
+        <div class="time-remaining" id="time-remaining">--:--</div>
+        <div class="time-label" id="time-label">Time Remaining</div>
+      </div>
+    </div>
+
+    <!-- Items Grid -->
+    <div class="items-grid" id="items-grid"></div>
+
+    <!-- Event Log -->
+    <div class="event-log-container">
+      <h3>📋 Live Event Log</h3>
+      <div class="event-log" id="event-log"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Auction Ended Overlay                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="auction-ended-overlay">
+    <div class="ended-card">
+      <h2>🏁 Auction Ended!</h2>
+      <p class="subtitle">Final verified winners from the atomic queue</p>
+      <div class="winners-list" id="winners-list"></div>
+      <div class="ended-actions">
+        <button class="btn btn-secondary" id="switch-after-end">Switch Auction</button>
+        <button class="btn btn-primary" id="close-ended">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container"></div>
+
+  <!-- Client Application -->
+  <script src="app.js"></script>
+</body>
+</html>

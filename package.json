@@ -1,0 +1,23 @@
+{
+  "name": "boltbid",
+  "version": "1.0.0",
+  "description": "BoltBid — Real-time flash-auction bidding engine with WebSocket communication for 50k concurrent bidders",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "node tests/auctionEngine.test.js",
+    "load-test": "node tests/loadTest.js",
+    "load-test:50k": "node tests/loadTest.js --bidders=50000"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["auction", "websocket", "real-time", "bidding", "concurrency"],
+  "license": "MIT"
+}
